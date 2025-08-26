@@ -8,7 +8,10 @@ export const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 
 api.interceptors.request.use(async (config) => {
   const token = await tokenStorage.get();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers = config.headers ?? {};
+    (config.headers as any).Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
