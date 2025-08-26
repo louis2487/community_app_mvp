@@ -1,13 +1,13 @@
 import axios from "axios";
-import * as SecureStore from "expo-secure-store";
-import { tokenStorage } from "./tokenStorage";
-
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../app/store";
+import { clearToken } from "../app/store/authSlice";
 const API_URL = "https://api.smartgauge.co.kr/";
-
+const dispatch = useDispatch();
 export const api = axios.create({ baseURL: API_URL, timeout: 10000 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await tokenStorage.get();
+  const token = useSelector((state: RootState) => state.auth.token);
   if (token) {
     config.headers = config.headers ?? {};
     (config.headers as any).Authorization = `Bearer ${token}`;
@@ -21,7 +21,6 @@ export const Auth = {
   logIn: async (username: string, password: string) => {
     const res = await api.post<AuthResponse>("/community/login", { username, password });
     const data = res.data;
-    await tokenStorage.set(data.token);  
     return data;
   },
   signUp: (email: string, password: string, username: string) =>
@@ -29,18 +28,18 @@ export const Auth = {
       .post("/community/signup", { email, password, username })
       .then(async (r) => {
         const data = r.data;
-        await tokenStorage.set(data.token);
+        
         return data;
-    }),
+      }),
   logOut: async () => {
-    await SecureStore.deleteItemAsync("token");
+     dispatch(clearToken())
   },
 };
 
 export type Post = {
   id: number;
   author: { id: number; username: string; avatarUrl?: string };
-  title: string; 
+  title: string;
   content: string;
   image_url?: string;
   created_at: string;
@@ -54,6 +53,11 @@ export const Posts = {
       .then((r) => r.data),
   get: (id: number) =>
     api.get<Post>(`/community/posts/${id}`).then((r) => r.data),
-  create: (payload: { title: string; content: string; image_url?: string }) =>
-    api.post<Post>("/community/posts", payload).then((r) => r.data),
+  create: (
+    payload: { title: string; content: string; image_url?: string },
+    token: string
+  ) =>
+    api.post<Post>("/community/posts", payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => r.data),
 };

@@ -4,6 +4,8 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Alert, Button, Image, ScrollView, TextInput } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "./store";
 
 export default function Compose() {
   const [content, setContent] = useState("");
@@ -20,18 +22,27 @@ export default function Compose() {
 
   const submit = async () => {
     try {
+      const token = useSelector((state: RootState) => state.auth.token);
+      if (!token) {
+        Alert.alert("로그인이 필요합니다");
+        return;
+      }
+
       let imageUrl: string | undefined;
       if (imageUri) {
         const b64 = await FileSystem.readAsStringAsync(imageUri, { encoding: "base64" });
         const upload = await fetch("https://api.smartgauge.co.kr/upload/base64", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
           body: JSON.stringify({ filename: `img_${Date.now()}.jpg`, base64: b64 }),
         });
         const data = await upload.json();
         imageUrl = data.url;
       }
-      await Posts.create({ title, content, image_url: imageUrl });
+      await Posts.create({ title, content, image_url: imageUrl }, token);
       router.replace("/");
     } catch (e: any) {
       Alert.alert("업로드 실패", e?.message ?? "잠시 후 다시 시도해주세요");
@@ -46,7 +57,7 @@ export default function Compose() {
         onChangeText={setTitle}
         style={{ borderWidth: 1, borderColor: "#ddd", borderRadius: 12, padding: 12, backgroundColor: "#fff" }}
       />
-       {imageUri && <Image source={{ uri: imageUri }} style={{ width: "100%", height: 240, borderRadius: 12, }} />}
+      {imageUri && <Image source={{ uri: imageUri }} style={{ width: "100%", height: 240, borderRadius: 12, }} />}
       <TextInput
         placeholder="본문을 입력하세요"
         value={content}

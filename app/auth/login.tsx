@@ -1,8 +1,10 @@
 import { Auth } from "@/lib/api";
-import { tokenStorage } from "@/lib/tokenStorage";
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { Alert, Button, Text, TextInput, View } from "react-native";
+import { useDispatch } from "react-redux";
+import { setToken } from "../store/authSlice";
+const dispatch = useDispatch();
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -11,7 +13,7 @@ export default function Login() {
   const submit = async () => {
     try {
       const res = await Auth.logIn(username, password);
-      await tokenStorage.set(res.token); 
+      dispatch(setToken({token:res.token, username:username}));
       router.replace("/");
     } catch (e: any) {
       Alert.alert("로그인 실패", e?.response?.data?.detail ?? "아이디 또는 비밀번호를 확인하세요");
