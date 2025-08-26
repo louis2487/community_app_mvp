@@ -1,0 +1,25 @@
+import { tokenStorage } from "@/lib/tokenStorage";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
+
+export default function SplashScreen() {
+  const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      const token = await tokenStorage.get();
+      if (token) {
+        router.replace("/");            
+      } else {
+        router.replace("/auth/login");  
+      }
+    })();
+  }, []);
+
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
+}
